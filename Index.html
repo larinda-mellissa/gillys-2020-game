@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>20/20 Billiards Live Scorer — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --baize:#0c3a25; --baize2:#114a31; --panel:#0f4029; --line:rgba(255,255,255,.12);
+  --ink:#f4f1e8; --mute:#a9c3b5; --gold:#f2b705; --red:#d11f3a; --ok:#37c26b; --ivory:#fbf7ec;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(ellipse at top,#16583a 0%,var(--baize) 55%,#08281a 100%) fixed;color:var(--ink);font-family:Barlow,system-ui,sans-serif;min-height:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.35;cursor:default}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 14px 40px}
+.num{font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px;flex:1;min-width:200px}
+.logo{width:46px;height:46px;border-radius:50%;background:var(--red);display:grid;place-items:center;font:800 15px/0.95 "Barlow Condensed";text-align:center;border:2px solid var(--ivory);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.brand b{display:block;font:800 22px/1 "Barlow Condensed";letter-spacing:1px}
+.brand small{color:var(--mute);font-size:13px}
+.minfo{font:600 16px "Barlow Condensed";color:var(--gold);letter-spacing:.5px}
+.tools{display:flex;gap:6px}
+.tbtn{background:rgba(255,255,255,.08);border:1px solid var(--line);padding:9px 14px;border-radius:10px;font-weight:600;font-size:14px}
+.tbtn.hot{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+
+/* clocks */
+.clocks{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-bottom:10px}
+.clock{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:16px;padding:10px 16px;position:relative;overflow:hidden}
+.clock label{font:700 13px "Barlow Condensed";letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
+.clock .big{font:800 clamp(52px,11vw,104px)/1 "Barlow Condensed";font-variant-numeric:tabular-nums}
+.clock small{display:block;color:var(--mute);font-size:13px;margin-top:2px;min-height:17px}
+.clock.late .big{color:var(--gold)}
+.clock.over .big{color:var(--red)}
+.shot .big.low{color:var(--red);animation:pulse .5s infinite alternate}
+.bar{height:8px;background:rgba(255,255,255,.1);border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .1s linear}
+.bar i.low{background:var(--red)}
+@keyframes pulse{to{opacity:.55}}
+
+/* banners */
+.banners{display:grid;gap:6px;margin-bottom:10px}
+.ban{border-radius:12px;padding:10px 14px;font:800 clamp(18px,3.4vw,26px) "Barlow Condensed";letter-spacing:1px;text-align:center}
+.ban.warn{background:var(--gold);color:#1b1b1b;animation:pulse .7s 4 alternate}
+.ban.ok{background:var(--ok);color:#06210f}
+.ban.foul{background:var(--red);color:#fff}
+.ban.info{background:var(--ivory);color:#14301f;font-size:clamp(15px,2.6vw,19px)}
+.ban.info small{display:block;font:500 13px Barlow;letter-spacing:0;margin-top:2px}
+
+/* players */
+.players{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.pcard{background:rgba(0,0,0,.22);border:2px solid var(--line);border-radius:16px;padding:12px 14px;transition:.2s}
+.pcard.on{border-color:var(--gold);background:rgba(242,183,5,.09);box-shadow:0 0 0 3px rgba(242,183,5,.15)}
+.pname{display:flex;align-items:center;gap:8px;font:700 clamp(18px,3vw,24px) "Barlow Condensed";letter-spacing:.5px}
+.pname em{margin-left:auto;font:700 11px Barlow;font-style:normal;letter-spacing:1px;background:var(--gold);color:#1b1b1b;padding:3px 7px;border-radius:6px}
+.ball{width:20px;height:20px;border-radius:50%;flex:none;position:relative;box-shadow:inset -3px -3px 5px rgba(0,0,0,.25)}
+.ball.b0{background:var(--ivory)}
+.ball.b1{background:#f5c33b}
+.ball::after{content:"";position:absolute;width:5px;height:5px;border-radius:50%;background:var(--red);top:4px;left:7px}
+.score{font:800 clamp(64px,13vw,120px)/1 "Barlow Condensed";font-variant-numeric:tabular-nums}
+.target{font-size:.25em;color:var(--mute);font-weight:600}
+.meta{display:flex;gap:14px;flex-wrap:wrap;color:var(--mute);font-size:14px}
+.meta b{color:var(--ink)}
+.brk{margin-top:8px;font:700 22px "Barlow Condensed";display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.brk b{font-size:34px;color:var(--gold)}
+.pend{background:var(--ok);color:#06210f;border-radius:8px;padding:0 8px;font-size:22px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font:700 12px Barlow;letter-spacing:.5px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute)}
+.chip.done{background:var(--ok);color:#06210f;border-color:var(--ok)}
+.chip.due{background:var(--red);color:#fff;border-color:var(--red);animation:pulse .6s infinite alternate}
+
+/* controls */
+.switch{background:var(--gold);color:#1b1b1b;margin-top:12px}
+.pts.baulk button{border-style:dashed}
+.pts.baulk.due button{border:2px solid var(--gold);background:rgba(242,183,5,.15)}
+.panel{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+.panel h3{margin:0 0 8px;font:700 14px "Barlow Condensed";letter-spacing:2px;text-transform:uppercase;color:var(--mute)}
+.bigbtn{width:100%;padding:18px;border-radius:14px;font:800 clamp(22px,4vw,30px) "Barlow Condensed";letter-spacing:1px;display:block;text-align:center}
+.bigbtn small{display:block;font:500 14px Barlow;letter-spacing:0;opacity:.85;margin-top:2px}
+.go{background:var(--ok);color:#06210f}
+.struck{background:var(--ivory);color:#14301f;margin-bottom:10px}
+.pts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pts button{background:var(--baize2);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 6px;font-weight:600;font-size:15px;line-height:1.15}
+.pts button b{display:block;font:800 30px "Barlow Condensed";color:var(--gold)}
+.pts button:active{transform:scale(.97)}
+.toggle{width:100%;margin-top:8px;padding:13px;border-radius:12px;background:transparent;border:2px dashed rgba(255,255,255,.3);font-weight:700;font-size:16px}
+.toggle.on{background:var(--gold);color:#1b1b1b;border:2px solid var(--gold)}
+.stroke{margin:10px 2px;color:var(--mute);font-size:15px;min-height:20px}
+.stroke b{color:var(--ink)}
+.row{display:flex;gap:8px}
+.confirm{flex:1;background:var(--ok);color:#06210f;padding:15px;border-radius:12px;font:800 22px "Barlow Condensed";letter-spacing:.5px}
+.confirm.miss{background:#5b6b63;color:#fff}
+.ghost{background:rgba(255,255,255,.08);border:1px solid var(--line);padding:12px 16px;border-radius:12px;font-weight:600}
+.fouls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.fouls span{font:700 13px "Barlow Condensed";letter-spacing:2px;color:var(--mute);text-transform:uppercase;margin-right:2px}
+.fbtn{background:rgba(209,31,58,.18);border:1px solid var(--red);color:#ffd7dd;padding:11px 14px;border-radius:10px;font-weight:600}
+.note{color:var(--mute);font-size:13px;margin-top:8px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.made{background:var(--ok);color:#06210f}
+.missed{background:var(--red);color:#fff}
+.pick{background:var(--baize2);border:1px solid rgba(255,255,255,.25)}
+.tally{display:grid;gap:6px;margin:10px 0}
+.tally div{display:flex;align-items:center;gap:8px;font-weight:600}
+.tally .dots{display:flex;gap:5px;margin-left:auto}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.35)}
+.dot.y{background:var(--ok);border-color:var(--ok)}
+.dot.n{background:var(--red);border-color:var(--red)}
+.results{display:grid;gap:4px;margin-top:10px;font-size:15px}
+.results div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:5px 0}
+
+/* log */
+.log ol{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto;font-size:14px}
+.log li{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+.log li span{color:var(--mute);font-family:"Barlow Condensed";min-width:40px}
+.log li.f{color:#ffb3bf}
+
+/* setup */
+.setup{max-width:560px;margin:4vh auto;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:20px;padding:22px}
+.setup h1{margin:6px 0 2px;font:800 34px "Barlow Condensed";letter-spacing:1px}
+.setup p{color:var(--mute);margin:0 0 16px;font-size:15px}
+.field{margin-bottom:14px}
+.field label{display:block;font:700 13px "Barlow Condensed";letter-spacing:2px;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
+.field input[type=text],.field select{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07);color:var(--ink);font:600 17px Barlow}
+.field select option{color:#111}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:11px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);font-weight:600}
+.seg button.on{background:var(--gold);color:#1b1b1b;border-color:var(--gold)}
+.chk{display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:600}
+
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);display:grid;place-items:center;padding:16px;z-index:9}
+.ov .box{background:#0f3f28;border:1px solid var(--line);border-radius:18px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:18px}
+.ov h2{margin:0 0 10px;font:800 26px "Barlow Condensed"}
+.ov ol{padding-left:20px;line-height:1.45;font-size:15px}
+.ov ol li{margin-bottom:6px}
+.stack{display:grid;gap:8px}
+
+@media (max-width:640px){
+  .clocks{grid-template-columns:1fr 1fr}
+  .pts{grid-template-columns:repeat(2,1fr)}
+  .wrap{padding:10px 10px 30px}
+  .minfo{order:3;width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+const LS = 'twentytwenty_scorer_proto_v1';
+let S = null, undoStack = [], UI = {menu:null, setup:null, confirmNew:false};
+let audio = null, lastBeep = -1;
+
+const now = () => Date.now();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const G = () => S.game, C = () => S.clock;
+const nm = i => esc(S.cfg.names[i]);
+const FOULS = {miss:'Miss', opp:"Potted opponent's cue-ball", other:'Other foul'};
+
+/* ---------- persistence ---------- */
+function save(){ try{ localStorage.setItem(LS, JSON.stringify({S, undoStack:undoStack.slice(-40)})) }catch(e){} }
+function load(){ try{ const d = JSON.parse(localStorage.getItem(LS)); if(d && d.S){ S = d.S; undoStack = d.undoStack || []; } }catch(e){} }
+
+/* ---------- state factories ---------- */
+function newGame(striker){
+  return {scores:[0,0], striker, first:striker, brk:0, b1:false, b2:false,
+          pend:0, items:[], baulkStroke:false, struck:false,
+          hb:[0,0], phase:'ready', timeUp:false, log:[], banner:null, shoot:null, winner:null, how:''};
+}
+function newClock(){ return {elapsed:0, runStart:null, started:false, paused:false, shotActive:false, shotStart:null, shotUsed:0, shotLimit:20, frozen:null}; }
+
+/* ---------- clocks ---------- */
+const gameMs = () => S.cfg.mins * 60000;
+const elapsed = () => { const c = C(); return Math.min(gameMs(), c.elapsed + (c.runStart ? now() - c.runStart : 0)); };
+const remaining = () => gameMs() - elapsed();
+const lateStage = () => elapsed() >= gameMs() * 0.75;     // after 15 of 20 minutes
+function shotLeft(){ const c = C(); if(!c.shotActive) return null; return Math.max(0, c.shotLimit*1000 - (c.shotUsed + (c.shotStart ? now() - c.shotStart : 0))); }
+function startShot(){ const c = C(); c.shotLimit = lateStage() ? 10 : 20; c.shotUsed = 0; c.shotActive = true; c.expired = false; c.shotStart = c.paused ? null : now(); lastBeep = -1; }
+function stopShot(){ const c = C(); c.shotActive = false; c.shotStart = null; c.expired = false; }
+function fmt(ms){ const s = Math.max(0, Math.ceil(ms/1000)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+/* ---------- sound ---------- */
+function initAudio(){ if(!S || !S.cfg.sound) return; try{ if(!audio) audio = new (window.AudioContext||window.webkitAudioContext)(); if(audio.state==='suspended') audio.resume(); }catch(e){} }
+function beep(f, d){ if(!S.cfg.sound || !audio) return; try{ const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = f; o.connect(g); g.connect(audio.destination); g.gain.setValueAtTime(.25, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + d); o.start(); o.stop(audio.currentTime + d); }catch(e){} }
+
+/* ---------- helpers ---------- */
+function snap(){ undoStack.push(JSON.stringify({cfg:S.cfg, match:S.match, game:S.game})); if(undoStack.length > 60) undoStack.shift(); }
+function log(m, cls){ G().log.unshift({t: fmt(remaining()), m, cls}); }
+function commit(){ save(); render(); }
+
+/* ---------- actions ---------- */
+function startMatch(cfg){
+  S = {cfg, match:{won:[0,0], gameNo:1, results:[], over:false, winner:null}, game:newGame(cfg.firstStriker), clock:newClock()};
+  undoStack = []; UI.setup = null; initAudio(); commit();
+}
+function swapBreaker(){ const g = G(); g.striker = g.first = 1 - g.striker; commit(); }
+
+function startGame(){
+  initAudio(); snap();
+  const g = G(), c = C();
+  g.phase = 'play'; g.banner = null;
+  c.started = true; c.paused = false; c.runStart = now();
+  startShot();
+  log(`Opening shot — ${nm(g.striker)}. Game clock started.`);
+  commit();
+}
+
+/* One tap = one scoring shot. The break goes up and the shot clock restarts. */
+function score(n, label, baulk){
+  const g = G(); if(g.phase !== 'play') return;
+  snap();
+  const p = g.striker, before = g.brk, nb = before + n;
+  let b1 = g.b1, b2 = g.b2; const msgs = [];
+
+  // Rules 8 & 9 — Baulk Pocket between 50–70 and 100–120
+  if(baulk && nb >= 50){
+    if(!b1){ b1 = true; msgs.push(['ok','BAULK POCKET ACHIEVED']); }
+    else if(!b2 && nb >= 100){ b2 = true; msgs.push(['ok','BAULK POCKET ACHIEVED (100)']); }
+  }
+  if(!b1 && nb >= 70)        return foul('nobaulk70',  {snap:false, pts:n});
+  if(b1 && !b2 && nb >= 120) return foul('nobaulk120', {snap:false, pts:n});
+
+  g.b1 = b1; g.b2 = b2;
+  g.scores[p] += n; g.brk = nb; if(nb > g.hb[p]) g.hb[p] = nb;
+  if(!b1 && before < 50 && nb >= 50)         msgs.push(['warn','BAULK POCKET WARNING AT 50']);
+  if(b1 && !b2 && before < 100 && nb >= 100) msgs.push(['warn','BAULK POCKET WARNING AT 100']);
+  log(`${nm(p)} +${n} ${esc(label)}${baulk ? ' (Baulk Pocket)' : ''} — break ${nb}`);
+  msgs.forEach(m => log(m[1]));
+  g.banner = msgs.length ? msgs : null;
+
+  if(g.scores[p] >= S.cfg.target) return endGame(p, `Reached ${S.cfg.target}`);
+  if(g.timeUp) return endByTime();
+  startShot(); commit();
+}
+
+function foul(code, opts = {}){
+  const g = G(); if(g.phase !== 'play') return;
+  if(opts.snap !== false) snap();
+  const p = g.striker, q = 1 - p;
+  let reason = FOULS[code] || code;
+  if(code==='nobaulk70')  reason = `Reached 70 without a Baulk Pocket — last shot (+${opts.pts}) not scored`;
+  if(code==='nobaulk120') reason = `Reached 120 without second Baulk Pocket — last shot (+${opts.pts}) not scored`;
+  if(code==='clock')      reason = 'Shot clock expired';
+  log(`FOUL — ${nm(p)}: ${esc(reason)}${g.brk ? ` (break ended on ${g.brk})` : ''}`, 'f');
+  g.striker = q; g.brk = 0; g.b1 = g.b2 = false;
+  g.banner = [['foul', `FOUL — ${reason}`], ['info', `${S.cfg.names[q]}: TABLE ANYWHERE`, "Object balls stay where they are. If the fouling player's cue-ball is off the table, spot it on the Centre Spot (Pyramid Spot if occupied) first."]];
+  if(g.timeUp) return endByTime();
+  startShot(); commit();
+}
+function endBreak(){
+  const g = G(); if(g.phase !== 'play') return;
+  snap();
+  log(`${nm(g.striker)} break ended on ${g.brk} — ${nm(1-g.striker)} to play`);
+  g.striker = 1 - g.striker; g.brk = 0; g.b1 = g.b2 = false; g.banner = null;
+  if(g.timeUp) return endByTime();
+  startShot(); commit();
+}
+function endNow(){ const g = G(); if(g.phase!=='play' || !g.timeUp) return; snap(); endByTime(); }
+
+function endGame(w, how){
+  const g = G(), c = C();
+  c.elapsed = elapsed(); c.runStart = null; stopShot();
+  g.phase = 'done'; g.winner = w; g.how = how;
+  S.match.won[w]++;
+  S.match.results.push({game:S.match.gameNo, scores:[...g.scores], w, how});
+  if(S.match.won[w] >= Math.ceil(S.cfg.bestOf/2)){ S.match.over = true; S.match.winner = w; }
+  log(`GAME ${S.match.gameNo} to ${nm(w)} — ${esc(how)}. ${g.scores[0]}–${g.scores[1]}`);
+  g.banner = [['ok', `${S.cfg.names[w]} wins game ${S.match.gameNo}`]];
+  commit();
+}
+
+function endByTime(){
+  const g = G(); stopShot();
+  if(g.scores[0] !== g.scores[1]) return endGame(g.scores[0] > g.scores[1] ? 0 : 1, 'Time');
+  g.phase = 'shootout'; g.shoot = {order:null, round:1, att:[[],[]], string:false};
+  log(`Level at ${g.scores[0]} — Sudden Death In-off Red Shoot Out`);
+  g.banner = [['warn','SUDDEN DEATH IN-OFF RED SHOOT OUT']];
+  commit();
+}
+
+function soFirst(p){ snap(); G().shoot.order = [p, 1-p]; G().banner = null; commit(); }
+function soAttempt(made){
+  const g = G(), s = g.shoot; snap();
+  const [a, b] = s.order;
+  const shooter = s.att[a].length < s.round ? a : b;
+  s.att[shooter].push(made);
+  log(`Shoot-out round ${s.round}: ${nm(shooter)} ${made ? 'MADE the in-off' : 'missed'}`);
+  if(s.att[a].length === s.round && s.att[b].length === s.round){
+    const ma = s.att[a][s.round-1], mb = s.att[b][s.round-1];
+    if(ma !== mb){ const w = ma ? a : b; g.scores[w] += 3; return endGame(w, 'Shoot-out (+3)'); }
+    if(s.round >= 5){ s.string = true; g.banner = [['warn','STILL LEVEL — SUDDEN DEATH STRING']]; }
+    else s.round++;
+  }
+  commit();
+}
+function soString(w){ snap(); G().scores[w] += 3; endGame(w, 'String decider (+3)'); }
+
+function nextGame(){
+  const prevFirst = G().first;
+  S.match.gameNo++; S.game = newGame(1 - prevFirst); S.clock = newClock(); undoStack = [];
+  commit();
+}
+
+function togglePause(){
+  const g = G(), c = C(); if(g.phase!=='play' || g.timeUp) return;
+  if(c.paused){ c.paused = false; if(c.started) c.runStart = now(); if(c.shotActive) c.shotStart = now(); log('Clock resumed'); }
+  else { c.elapsed = elapsed(); c.runStart = null; c.paused = true;
+         if(c.shotActive && c.shotStart){ c.shotUsed += now() - c.shotStart; c.shotStart = null; } log('Clock paused'); }
+  commit();
+}
+
+function undo(){
+  if(!undoStack.length) return;
+  const d = JSON.parse(undoStack.pop());
+  S.cfg = d.cfg; S.match = d.match; S.game = d.game;
+  const g = G(), c = C();
+  if(g.phase === 'ready'){ S.clock = newClock(); }
+  else if(g.phase === 'play'){
+    if(!g.timeUp && !c.paused && !c.runStart && c.started) c.runStart = now();
+    if(g.timeUp) stopShot(); else startShot();
+  } else stopShot();
+  commit();
+}
+
+/* ---------- tick ---------- */
+function tick(){
+  if(!S || UI.setup) return;
+  const g = G(), c = C();
+  if(g.phase === 'play' && !g.timeUp && c.runStart && elapsed() >= gameMs()){
+    c.elapsed = gameMs(); c.runStart = null; g.timeUp = true; stopShot(); beep(330, .9);
+    log(`TIME — ${S.cfg.mins} minutes up`);
+    g.banner = [['warn','TIME! Enter the last shot — or tap END GAME']]; return commit();
+  }
+  if(g.phase === 'play' && c.shotActive && c.shotStart && !c.expired){
+    const l = shotLeft();
+    if(l <= 0){ c.expired = true; c.shotUsed = c.shotLimit*1000; c.shotStart = null; beep(220, .6); return commit(); }
+    const s = Math.ceil(l/1000);
+    if(s <= 5 && s !== lastBeep){ lastBeep = s; beep(880, .08); }
+  }
+  paintClocks();
+}
+setInterval(tick, 100);
+
+function paintClocks(){
+  const gc = document.getElementById('gclock'); if(!gc) return;
+  const g = G(), c = C(), r = remaining();
+  gc.textContent = fmt(r);
+  document.getElementById('gbox').className = 'clock' + (g.timeUp || (g.phase!=='play' && g.phase!=='ready') ? ' over' : lateStage() ? ' late' : '');
+  let sub = '';
+  if(g.phase === 'ready') sub = 'Starts with the opening shot';
+  else if(g.phase === 'play') sub = g.timeUp ? 'TIME' : c.paused ? 'PAUSED' : lateStage() ? 'Final 5 minutes — 10 second shots' : `${S.cfg.mins===20?'First 15 minutes':'Early stage'} — 20 second shots`;
+  else if(g.phase === 'shootout') sub = 'Time — shoot-out';
+  else sub = 'Game over';
+  document.getElementById('gsub').textContent = sub;
+
+  const sc = document.getElementById('sclock'), bar = document.getElementById('sbar'), ss = document.getElementById('ssub');
+  const l = shotLeft();
+  if(l !== null && g.phase === 'play'){
+    const s = Math.ceil(l/1000), low = s <= 5;
+    sc.textContent = s; sc.className = 'big' + (low ? ' low' : '');
+    bar.style.width = (l/(c.shotLimit*10)) + '%'; bar.className = low ? 'low' : '';
+    ss.textContent = c.expired ? 'TIME — foul if the cue-ball was not struck' : c.paused ? 'Paused' : `${c.shotLimit}s per shot · restarts on every score`;
+  } else {
+    sc.textContent = '—'; sc.className = 'big'; bar.style.width = '0%'; ss.textContent = '';
+  }
+}
+
+/* ---------- render ---------- */
+function render(){
+  const app = document.getElementById('app');
+  if(!S || UI.setup){ app.innerHTML = setupHTML(); return; }
+  const g = G(), c = C(), m = S.match;
+  app.innerHTML = `
+  <header class="top">
+    <div class="brand"><div class="logo">20<br>20</div><div><b>20/20 BILLIARDS</b><small>Live scorer · prototype</small></div></div>
+    <div class="minfo">Game ${m.gameNo} · Best of ${S.cfg.bestOf} · First to ${S.cfg.target}</div>
+    <div class="tools">
+      <button class="tbtn ${c.paused?'hot':''}" onclick="togglePause()" ${g.phase!=='play'||g.timeUp?'disabled':''}>${c.paused?'Resume':'Pause'}</button>
+      <button class="tbtn" onclick="undo()" ${undoStack.length?'':'disabled'}>Undo</button>
+      <button class="tbtn" onclick="UI.menu='main';render()">Menu</button>
+    </div>
+  </header>
+
+  <section class="clocks">
+    <div class="clock" id="gbox"><label>Game clock</label><div class="big" id="gclock">${fmt(remaining())}</div><small id="gsub"></small></div>
+    <div class="clock shot"><label>Shot clock</label><div class="big" id="sclock">—</div><div class="bar"><i id="sbar"></i></div><small id="ssub"></small></div>
+  </section>
+
+  ${g.banner ? `<div class="banners">${g.banner.map(b => `<div class="ban ${b[0]}">${esc(b[1])}${b[2]?`<small>${esc(b[2])}</small>`:''}</div>`).join('')}</div>` : ''}
+
+  <section class="players">${[0,1].map(playerCard).join('')}</section>
+
+  ${controlsHTML()}
+
+  <section class="panel log"><h3>Game log</h3>
+    <ol>${g.log.length ? g.log.slice(0,60).map(e => `<li class="${e.cls||''}"><span>${e.t}</span>${e.m}</li>`).join('') : '<li><span></span>Nothing yet</li>'}</ol>
+  </section>
+  ${UI.menu ? menuHTML() : ''}`;
+  paintClocks();
+}
+
+function playerCard(i){
+  const g = G(), on = g.striker === i && (g.phase === 'play' || g.phase === 'ready');
+  let extra = '';
+  if(on && g.phase === 'play'){
+    const c1 = g.b1 ? ['done','50–70 Baulk ✓'] : g.brk >= 50 ? ['due','Baulk Pocket due before 70'] : ['','50–70 Baulk'];
+    const c2 = g.b2 ? ['done','100–120 Baulk ✓'] : (g.b1 && g.brk >= 100) ? ['due','Baulk Pocket due before 120'] : ['','100–120 Baulk'];
+    extra = `<div class="brk">Break <b class="num">${g.brk}</b></div>
+             <div class="chips"><span class="chip ${c1[0]}">${c1[1]}</span><span class="chip ${c2[0]}">${c2[1]}</span></div>`;
+  }
+  return `<div class="pcard ${on?'on':''}">
+    <div class="pname"><span class="ball b${i}"></span>${nm(i)}${on?`<em>${g.phase==='ready'?'TO BREAK':'AT TABLE'}</em>`:''}</div>
+    <div class="score num">${g.scores[i]}</div>
+    <div class="meta"><span>Games <b>${S.match.won[i]}</b></span><span>High break <b>${g.hb[i]}</b></span></div>
+    ${extra}
+  </div>`;
+}
+
+function controlsHTML(){
+  const g = G();
+  if(g.phase === 'ready') return `<section class="panel">
+      <button class="bigbtn go" onclick="startGame()">START<small>${nm(g.striker)} to play first · starts the game clock and shot clock</small></button>
+      <div class="row" style="margin-top:8px"><button class="ghost" onclick="swapBreaker()">Swap who plays first</button></div>
+    </section>`;
+
+  if(g.phase === 'play'){
+    const c = C();
+    const due = (!g.b1 && g.brk >= 50) || (g.b1 && !g.b2 && g.brk >= 100);
+    const btn = (n, label, b) => `<button onclick="score(${n},'${label}',${b})">${label}<b>+${n}</b></button>`;
+    return `<section class="panel">
+      ${c.expired ? `<button class="bigbtn missed" style="margin-bottom:10px" onclick="foul('clock')">SHOT CLOCK FOUL<small>cue-ball not struck in time · if it was, just tap the score</small></button>` : ''}
+      ${g.timeUp ? `<button class="bigbtn missed" style="margin-bottom:10px" onclick="endNow()">END GAME<small>no score on the last shot</small></button>` : ''}
+      <h3>${nm(g.striker)} — tap each score</h3>
+      <div class="pts">${btn(3,'Pot red',false)}${btn(3,'In-off red',false)}${btn(2,'In-off white',false)}${btn(2,'Cannon',false)}</div>
+      <h3 style="margin-top:12px;${due?'color:var(--gold)':''}">Into a Baulk Pocket ${due?'— NEEDED NOW':''}</h3>
+      <div class="pts baulk ${due?'due':''}">${btn(3,'Pot red',true)}${btn(3,'In-off red',true)}${btn(2,'In-off white',true)}</div>
+      <button class="bigbtn switch" onclick="endBreak()">END BREAK → ${nm(1-g.striker)}</button>
+      <div class="fouls"><span>Foul</span>
+        <button class="fbtn" onclick="foul('miss')">Miss</button>
+        <button class="fbtn" onclick="foul('opp')">Potted opponent's cue-ball</button>
+        <button class="fbtn" onclick="foul('other')">Other foul</button>
+      </div>
+      <div class="note">Every score tap restarts the shot clock. The 70 / 120 Baulk Pocket foul is called automatically.</div>
+    </section>`;
+  }
+
+  if(g.phase === 'shootout'){
+    const s = g.shoot;
+    if(!s.order) return `<section class="panel"><h3>Sudden Death In-off Red Shoot Out</h3>
+      <p class="note" style="font-size:15px;margin:0 0 10px">Scores level at ${g.scores[0]}. Players string again for the order (keeping their own cue-ball). Who shoots first?</p>
+      <div class="duo"><button class="bigbtn pick" onclick="soFirst(0)">${nm(0)}</button><button class="bigbtn pick" onclick="soFirst(1)">${nm(1)}</button></div></section>`;
+    const tally = `<div class="tally">${s.order.map(p => `<div><span class="ball b${p}"></span>${nm(p)}<span class="dots">${[0,1,2,3,4].map(k => `<i class="dot ${s.att[p][k]===true?'y':s.att[p][k]===false?'n':''}"></i>`).join('')}</span></div>`).join('')}</div>`;
+    if(s.string) return `<section class="panel"><h3>Sudden death String</h3>${tally}
+      <p class="note" style="font-size:15px;margin:0 0 10px">Still level after 5 attempts each. Who won the String?</p>
+      <div class="duo"><button class="bigbtn pick" onclick="soString(0)">${nm(0)}</button><button class="bigbtn pick" onclick="soString(1)">${nm(1)}</button></div></section>`;
+    const [a,b] = s.order, shooter = s.att[a].length < s.round ? a : b;
+    return `<section class="panel"><h3>Shoot-out · round ${s.round} of 5</h3>${tally}
+      <p style="font:700 22px 'Barlow Condensed';margin:6px 0 4px">${nm(shooter)} to shoot</p>
+      <p class="note" style="margin:0 0 10px">Cue-ball on the centre of the Baulk Line, red on the Centre Spot. In-off the red into either Middle Pocket.</p>
+      <div class="duo"><button class="bigbtn made" onclick="soAttempt(true)">MADE</button><button class="bigbtn missed" onclick="soAttempt(false)">MISSED</button></div></section>`;
+  }
+
+  // done
+  const m = S.match, w = g.winner;
+  return `<section class="panel">
+    <h3>Game ${m.gameNo} result</h3>
+    <p style="font:800 30px 'Barlow Condensed';margin:0">${nm(w)} wins ${g.scores[w]}–${g.scores[1-w]}</p>
+    <p class="note" style="margin:2px 0 12px">${esc(g.how)}</p>
+    ${m.over
+      ? `<p style="font:800 34px 'Barlow Condensed';color:var(--gold);margin:4px 0 12px">MATCH TO ${nm(m.winner).toUpperCase()} · ${m.won[m.winner]}–${m.won[1-m.winner]}</p>
+         <button class="bigbtn go" onclick="UI.setup={};render()">New match</button>`
+      : `<button class="bigbtn go" onclick="nextGame()">Start game ${m.gameNo+1}<small>${nm(1-g.first)} plays first · games ${m.won[0]}–${m.won[1]}</small></button>`}
+    <div class="results">${m.results.map(r => `<div><span>Game ${r.game}</span><span>${nm(0)} ${r.scores[0]} – ${r.scores[1]} ${nm(1)}</span><span>${esc(r.how)}</span></div>`).join('')}</div>
+  </section>`;
+}
+
+function menuHTML(){
+  if(UI.menu === 'rules') return `<div class="ov" onclick="if(event.target===this){UI.menu=null;render()}"><div class="box">
+    <h2>20/20 rules — what the app enforces</h2>
+    <ol>
+      <li>Game ends at ${S.cfg.mins} minutes or when a player reaches ${S.cfg.target}. Clock starts on the first strike.</li>
+      <li>Shot clock: 20s per shot for the first 15 minutes, 10s after. Not striking in time is a foul.</li>
+      <li>Pocketing the opponent's cue-ball is a foul.</li>
+      <li>All misses are fouls.</li>
+      <li>After a foul the incoming player has "Table Anywhere"; the shot clock restarts.</li>
+      <li>If the opponent's ball is off the table, it goes on the Centre Spot (Pyramid if occupied) first.</li>
+      <li>Touching ball: Section 3 Rule 14; shot clock starts after balls are placed.</li>
+      <li>"Baulk Pocket Warning at 50 / 100" shows when a break reaches 50 / 100.</li>
+      <li>A Baulk Pocket must be made before or on the stroke that reaches 70 / 120, or that stroke is a foul.</li>
+      <li>Level at time → Sudden Death In-off Red Shoot Out.</li>
+      <li>Winner = makes the in-off when the opponent misses in the same round; +3 added to their score.</li>
+      <li>Still level after 5 attempts each → sudden death String.</li>
+    </ol>
+    <button class="ghost" style="width:100%" onclick="UI.menu=null;render()">Close</button>
+  </div></div>`;
+  return `<div class="ov" onclick="if(event.target===this){UI.menu=null;UI.confirmNew=false;render()}"><div class="box">
+    <h2>Menu</h2>
+    <div class="stack">
+      <button class="ghost" onclick="UI.menu='rules';render()">Rules quick reference</button>
+      <button class="ghost" onclick="S.cfg.sound=!S.cfg.sound;initAudio();commit()">Shot-clock beeps: ${S.cfg.sound?'ON':'OFF'}</button>
+      ${UI.confirmNew
+        ? `<button class="fbtn" style="padding:14px" onclick="UI.menu=null;UI.confirmNew=false;UI.setup={};render()">Yes — abandon this match and start a new one</button>`
+        : `<button class="ghost" onclick="UI.confirmNew=true;render()">New match…</button>`}
+      <button class="ghost" onclick="UI.menu=null;UI.confirmNew=false;render()">Close</button>
+    </div>
+  </div></div>`;
+}
+
+/* ---------- setup ---------- */
+let SET = {names:['Player A','Player B'], bestOf:3, firstStriker:0, mins:20, sound:true};
+function setupHTML(){
+  const seg = (key, opts) => `<div class="seg">${opts.map(([v,l]) => `<button class="${SET[key]===v?'on':''}" onclick="SET.${key}=${v};render()">${l}</button>`).join('')}</div>`;
+  return `<div class="setup">
+    <div class="logo" style="width:60px;height:60px;font-size:20px">20<br>20</div>
+    <h1>20/20 Billiards — New match</h1>
+    <p>Prototype live scorer for the 20-minute / 120-point format.</p>
+    <div class="field"><label>Player 1 (white)</label><input type="text" value="${esc(SET.names[0])}" oninput="SET.names[0]=this.value"></div>
+    <div class="field"><label>Player 2 (yellow)</label><input type="text" value="${esc(SET.names[1])}" oninput="SET.names[1]=this.value"></div>
+    <div class="field"><label>Who won the String (plays first)</label>${seg('firstStriker',[[0,'Player 1'],[1,'Player 2']])}</div>
+    <div class="field"><label>Match length</label>${seg('bestOf',[[1,'Single game'],[3,'Best of 3'],[5,'Best of 5']])}</div>
+    <div class="field"><label>Game clock</label>${seg('mins',[[20,'20 min (official)'],[4,'4 min demo'],[2,'2 min demo']])}
+      <div class="note">Demo clocks let you see the 10-second shot clock and the shoot-out quickly. The shot clock drops to 10s for the final quarter.</div></div>
+    <div class="field"><label class="chk" style="text-transform:none;letter-spacing:0;font:600 16px Barlow;color:var(--ink)"><input type="checkbox" ${SET.sound?'checked':''} onchange="SET.sound=this.checked"> Beep in the last 5 seconds of the shot clock</label></div>
+    <button class="bigbtn go" onclick="startMatch({names:[SET.names[0].trim()||'Player A',SET.names[1].trim()||'Player B'],bestOf:SET.bestOf,firstStriker:SET.firstStriker,mins:SET.mins,target:120,sound:SET.sound})">Start match</button>
+    ${S && !S.match.over && S.game.phase!=='done' ? `<button class="ghost" style="width:100%;margin-top:8px" onclick="UI.setup=null;render()">Back to current match</button>` : ''}
+  </div>`;
+}
+
+load();
+if(S) UI.setup = null; else UI.setup = {};
+render();
+</script>
+</body>
+</html>
