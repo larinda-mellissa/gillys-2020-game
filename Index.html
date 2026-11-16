@@ -76,6 +76,7 @@ button:disabled{opacity:.35;cursor:default}
 .chip.due{background:var(--red);color:#fff;border-color:var(--red);animation:pulse .6s infinite alternate}
 
 /* controls */
+.sreset{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:6px 10px;border-radius:8px;font-weight:600;font-size:13px}
 .logoimg{width:52px;height:52px;border-radius:50%;flex:none;box-shadow:0 2px 10px rgba(0,0,0,.45);display:block}
 .switch{background:var(--gold);color:#1b1b1b;margin-top:12px}
 .pts.baulk button{border-style:dashed}
@@ -257,6 +258,10 @@ function foul(code, opts = {}){
   if(g.timeUp) return endByTime();
   startShot(); commit();
 }
+function resetShot(){
+  const g = G(); if(g.phase !== 'play' || g.timeUp) return;
+  startShot(); log('Shot clock reset'); commit();
+}
 function endBreak(){
   const g = G(); if(g.phase !== 'play') return;
   snap();
@@ -393,7 +398,7 @@ function render(){
 
   <section class="clocks">
     <div class="clock" id="gbox"><label>Game clock</label><div class="big" id="gclock">${fmt(remaining())}</div><small id="gsub"></small></div>
-    <div class="clock shot"><label>Shot clock</label><div class="big" id="sclock">—</div><div class="bar"><i id="sbar"></i></div><small id="ssub"></small></div>
+    <div class="clock shot"><label>Shot clock</label>${g.phase==='play' && !g.timeUp ? `<button class="sreset" onclick="resetShot()">↻ Reset</button>` : ''}<div class="big" id="sclock">—</div><div class="bar"><i id="sbar"></i></div><small id="ssub"></small></div>
   </section>
 
   ${g.banner ? `<div class="banners">${g.banner.map(b => `<div class="ban ${b[0]}">${esc(b[1])}${b[2]?`<small>${esc(b[2])}</small>`:''}</div>`).join('')}</div>` : ''}
