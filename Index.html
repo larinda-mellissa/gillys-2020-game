@@ -493,7 +493,7 @@ function menuHTML(){
   if(UI.menu === 'rules') return `<div class="ov" onclick="if(event.target===this){UI.menu=null;render()}"><div class="box">
     <h2>20/20 rules — what the app enforces</h2>
     <ol>
-      <li>Game ends at ${S.cfg.mins} minutes or when a player reaches ${S.cfg.target}. Clock starts on the first strike.</li>
+      <li>Game ends at 20 minutes or when a player reaches 120 points. The clock starts on the opening shot.</li>
       <li>Shot clock: 20s per shot for the first 15 minutes, 10s after. Not striking in time is a foul.</li>
       <li>Pocketing the opponent's cue-ball is a foul.</li>
       <li>All misses are fouls.</li>
